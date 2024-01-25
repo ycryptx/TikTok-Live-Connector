@@ -1,10 +1,10 @@
-const { EventEmitter } = require('node:events');
+const { EventEmitter } = require('events');
 const { getUuc } = require('./tiktokUtils');
 const pkg = require('../../package.json');
 const axios = require('axios').create({
     timeout: 5000,
     headers: {
-        'User-Agent': `${pkg.name}/${pkg.version} ${process.platform}`,
+        'User-Agent': `${window.navigator.userAgent}`,
     },
 });
 

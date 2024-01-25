@@ -1,10 +1,9 @@
 const Config = require('./webcastConfig.js');
-const websocket = require('websocket');
 const { deserializeWebsocketMessage, serializeMessage } = require('./webcastProtobuf.js');
 
-class WebcastWebsocket extends websocket.client {
+class WebcastWebsocket extends WebSocket {
     constructor(wsUrl, cookieJar, clientParams, wsParams, customHeaders, websocketOptions) {
-        super();
+        super(wsUrl);
         this.pingInterval = null;
         this.connection = null;
         this.wsParams = { ...clientParams, ...wsParams };
@@ -14,33 +13,28 @@ class WebcastWebsocket extends websocket.client {
             ...(customHeaders || {}),
         };
 
-        this.#handleEvents();
-        this.connect(this.wsUrlWithParams, 'echo-protocol', Config.TIKTOK_URL_WEBCAST, this.wsHeaders, websocketOptions);
-    }
+        this.addEventListener('open', (event) => {
+            this.connection = event.target;
+            this.pingInterval = setInterval(() => this.sendPing(), 10000);
+        });
 
-    #handleEvents() {
-        this.on('connect', (wsConnection) => {
-            this.connection = wsConnection;
-            this.pingInterval = setInterval(() => this.#sendPing(), 10000);
+        this.addEventListener('message', (event) => {
+            if (event.data instanceof Blob) {
+                this.handleMessage(event.data);
+            }
+        });
 
-            wsConnection.on('message', (message) => {
-                if (message.type === 'binary') {
-                    this.#handleMessage(message);
-                }
-            });
-
-            wsConnection.on('close', () => {
-                clearInterval(this.pingInterval);
-            });
+        this.addEventListener('close', () => {
+            clearInterval(this.pingInterval);
         });
     }
 
-    async #handleMessage(message) {
+    async handleMessage(message) {
         try {
-            let decodedContainer = await deserializeWebsocketMessage(message.binaryData);
+            let decodedContainer = await deserializeWebsocketMessage(await message.arrayBuffer());
 
             if (decodedContainer.id > 0) {
-                this.#sendAck(decodedContainer.id);
+                this.sendAck(decodedContainer.id);
             }
 
             // Emit 'WebcastResponse' from ws message container if decoding success
@@ -52,14 +46,14 @@ class WebcastWebsocket extends websocket.client {
         }
     }
 
-    #sendPing() {
+    sendPing() {
         // Send static connection alive ping
-        this.connection.sendBytes(Buffer.from('3A026862', 'hex'));
+        this.connection.send(Buffer.from('3A026862', 'hex'));
     }
 
-    #sendAck(id) {
+    sendAck(id) {
         let ackMsg = serializeMessage('WebcastWebsocketAck', { type: 'ack', id });
-        this.connection.sendBytes(ackMsg);
+        this.connection.send(ackMsg);
     }
 }
 
