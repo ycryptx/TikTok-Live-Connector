@@ -1,6 +1,6 @@
 {
   "name": "@ycryptx/tiktok-live-connector",
-  "version": "1.0.7",
+  "version": "1.0.9",
   "description": "Node.js module to receive live stream chat events like comments and gifts from TikTok LIVE",
   "main": "index.js",
   "types": "./dist/index.d.ts",
@@ -52,9 +52,10 @@
   "homepage": "https://github.com/zerodytrash/TikTok-Live-Connector#readme",
   "dependencies": {
     "axios": "^0.25.0",
+    "browserify-zlib": "^0.2.0",
     "events": "^3.3.0",
     "protobufjs": "^6.11.2",
-    "tiktok-live-connector": "^1.1.2",
+    "util": "^0.12.5",
     "websocket": "^1.0.34"
   },
   "devDependencies": {
